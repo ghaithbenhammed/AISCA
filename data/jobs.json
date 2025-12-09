@@ -1,0 +1,26 @@
+{
+    "Data Analyst": [
+        "exploratory data analysis",
+        "data cleaning techniques",
+        "data visualization tools",
+        "python for data analysis"
+    ],
+    "Machine Learning Engineer": [
+        "supervised learning",
+        "model training",
+        "feature engineering",
+        "model evaluation metrics"
+    ],
+    "Data Engineer": [
+        "sql querying",
+        "data pipelines",
+        "etl processes",
+        "database modeling"
+    ],
+    "NLP Engineer": [
+        "text preprocessing",
+        "word embeddings",
+        "transformer models",
+        "text classification"
+    ]
+}
