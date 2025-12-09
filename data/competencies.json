@@ -1,0 +1,26 @@
+{
+    "Data Analysis": [
+        "exploratory data analysis",
+        "data cleaning techniques",
+        "data visualization tools",
+        "python for data analysis"
+    ],
+    "Machine Learning": [
+        "supervised learning",
+        "model training",
+        "feature engineering",
+        "model evaluation metrics"
+    ],
+    "Natural Language Processing": [
+        "text preprocessing",
+        "word embeddings",
+        "transformer models",
+        "text classification"
+    ],
+    "Data Engineering": [
+        "sql querying",
+        "data pipelines",
+        "etl processes",
+        "database modeling"
+    ]
+}
