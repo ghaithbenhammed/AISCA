@@ -3,7 +3,14 @@ import numpy as np
 from sentence_transformers import SentenceTransformer, util
  
 # Charger le modèle SBERT
-model = SentenceTransformer("all-MiniLM-L6-v2")
+model = None
+
+def get_model():
+    global model
+    if model is None:
+        model = SentenceTransformer("all-MiniLM-L6-v2")
+    return model
+
  
 # Charger les compétences
 with open("data/competencies.json", "r") as f:
@@ -15,6 +22,7 @@ with open("data/jobs.json", "r") as f:
  
  
 def compute_block_scores(user_text):
+    model = get_model()
     """
     Calcule un score pour chaque bloc :
     - Score de compétence = max(micro-compétences)
