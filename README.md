@@ -1,117 +1,127 @@
-AISCA — Analyse Sémantique des Compétences & Recommandation de Métiers
+# 🚀 AISCA — Analyse Sémantique des Compétences & Recommandation de Métiers
 
-Projet d’IA Générative & Semantic Matching – 2024 / 2025
-Par : Ghaith BEN HAMMED / Chaïma ASTITOU
+### 🧠 *Projet d’IA Générative – Master 2024 / 2025*  
+**Par : Ghaith BEN HAMMED & Chaïma ASTITOU**
 
-📌 Description du Projet
+---
 
-AISCA est une application interactive développée en Python + Streamlit permettant :
+## 📌 Présentation du Projet
 
-d’analyser automatiquement les compétences d’un utilisateur
+**AISCA** est une application interactive développée en **Python + Streamlit** permettant :
 
-de calculer la similarité sémantique de son profil via SBERT (Sentence-BERT)
+- d’analyser automatiquement les compétences d’un utilisateur  
+- de calculer la **similarité sémantique** de son profil via **SBERT (Sentence-BERT)**  
+- de recommander le **métier le plus pertinent**  
+- de générer automatiquement :
+  - une **bio professionnelle courte**
+  - un **plan d’apprentissage personnalisé**
+  - grâce au modèle **Gemini 2.5 Flash (Google AI)**  
+- de produire un **rapport PDF professionnel** contenant :
+  - graphiques (Plotly)
+  - synthèse IA
+  - forces & faiblesses  
+  - métier recommandé
 
-de recommander le métier le plus pertinent
+---
 
-de générer automatiquement une bio professionnelle et un plan d’apprentissage personnalisé grâce au modèle Gemini 2.5 Flash (Google)
+## 🚀 Fonctionnalités
 
-de produire un rapport PDF professionnel contenant graphiques + synthèse IA
+### 🔍 Analyse SBERT (Semantic Similarity)  
+- Extraction automatique des informations du questionnaire  
+- Encodage via `all-MiniLM-L6-v2`  
+- Matching sémantique contre :
+  - 4 blocs de compétences  
+  - Profils métiers prédéfinis  
 
-🚀 Fonctionnalités principales
-🔍 Analyse SBERT (Semantic Similarity)
+---
 
-Extraction des informations clés du questionnaire
+### 📊 Visualisation Interactive (Plotly)
 
-Encodage SBERT via all-MiniLM-L6-v2
+- Diagramme **Doughnut**  
+- Diagramme **Bar Chart horizontal**  
+- Animation fluide et responsive  
+- Export haute résolution pour le PDF  
 
-Matching sémantique contre :
+---
 
-4 blocs de compétences
-
-plusieurs métiers cibles
-
-📊 Visualisation Interactive
-
-Les résultats sont affichés via Plotly :
-
-Doughnut Chart de répartition des scores
-
-Bar Chart horizontal des compétences
-
-Interactif, fluide et responsive
-
-🤖 IA Générative – Gemini 2.5 Flash
+### 🤖 IA Générative — Gemini 2.5 Flash
 
 L’IA génère automatiquement :
 
-une bio professionnelle courte (6 lignes)
+- Une **bio professionnelle courte** (max 6 lignes)
+- Un **plan d’apprentissage structuré** (max 10 lignes)
+- Un texte clair, synthétique et adapté aux métiers Data/IA
 
-un plan d’apprentissage structuré (10 lignes max)
+---
 
-un texte clair, synthétique et orienté Data/IA
+### 📄 Génération d’un Rapport PDF Professionnel
 
-📄 Génération d’un Rapport PDF Pro
+Le rapport PDF final contient :
 
-Le PDF inclut :
+- Graphiques en haute résolution  
+- Forces & Faiblesses du profil  
+- Métier recommandé  
+- Bio professionnelle  
+- Plan d’apprentissage AI  
 
-Graphiques exportés en haute résolution
-
-Forces & faiblesses du profil
-
-Métier recommandé
-
-Bio + Plan d’apprentissage IA
-
-Mise en page avec header/footer & pagination
-
-🧩 Architecture du Projet
+---
 AISCA/
-│── app.py → Page d'accueil
-│── semantic_engine.py → Analyse SBERT
-│── genai.py → Appels API Gemini 2.5 Flash
-│── rag_context.py → Construction du contexte IA
-│── README.md → Documentation
+│── app.py # Page d'accueil
+│── semantic_engine.py # Analyse SBERT
+│── genai.py # Appels API Gemini
+│── rag_context.py # Construction du contexte IA
+│── README.md # Documentation
 │
 ├── data/
-│ ├── competencies.json → Blocs de compétences
-│ └── jobs.json → Profils métiers
+│ ├── competencies.json # Blocs de compétences
+│ └── jobs.json # Profils métiers
 │
 ├── pages/
-│ ├── Questionnaire.py → Questionnaire utilisateur
-│ └── Résultats.py → Analyse + IA + PDF
+│ ├── Questionnaire.py # Questionnaire utilisateur
+│ └── Résultats.py # Analyse + IA + PDF
 │
 ├── utils/
-│ └── pdf_generator.py → Génération PDF professionnel
+│ └── pdf_generator.py # Génération PDF professionnel
 │
-├── temp/ → Export images (ignoré)
+├── temp/ # Export des images pour PDF 
 │
-└── .gitignore → Exclusions Git
+└── .gitignore
 
-🛠️ Tech Stack
-Technologie Rôle
-Python 3.12 Base du projet
-Streamlit Interface web
-SentenceTransformers (SBERT) Similarité sémantique
-Google Gemini API – 2.5 Flash IA générative
-Plotly Visualisations
-ReportLab Génération PDF
-Kaleido Export des graphiques
-📦 Installation
+## 🛠️ Tech Stack
+
+| Technologie | Rôle |
+|------------|------|
+| **Python 3.12** | Base du projet |
+| **Streamlit** | Interface Web |
+| **SentenceTransformers (SBERT)** | Similarité sémantique |
+| **Google Gemini API – 2.5 Flash** | IA générative |
+| **Plotly** | Visualisations |
+| **ReportLab** | Export PDF |
+| **Kaleido** | Export images haute résolution |
+
+---
+
+## 📦 Installation
+
+```bash
 git clone https://github.com/ghaithbenhammed/AISCA.git
 cd AISCA
 pip install -r requirements.txt
 streamlit run app.py
+```
 
-👨‍🏫 Encadrement & Exigences respectées
+Exigences respectées
 
-✔ Analyse sémantique SBERT
-✔ RAG & construction de contexte
-✔ IA générative Gemini
-✔ Interface Streamlit structurée
-✔ UX fluide + animations
-✔ Rapport PDF professionnel
-✔ Validation des champs obligatoires
+✔ Analyse sémantique avec SBERT
+✔ Approche RAG (construction d’un contexte IA structuré)
+✔ IA générative Gemini 2.5 Flash
+✔ Interface Streamlit fluide & ergonomique
+✔ Visualisations modernes et responsives
+✔ Export PDF professionnel
+✔ Validation stricte du questionnaire
+✔ Architecture claire et modulaire
 
 📘 Licence
 
 Projet académique — reproduction autorisée avec citation.
+
