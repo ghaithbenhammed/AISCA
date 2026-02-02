@@ -1,185 +1,194 @@
 import streamlit as st
-import matplotlib.pyplot as plt
+import plotly.graph_objects as go
 import numpy as np
+import time
+import os
+import tempfile
+
 from semantic_engine import analyze_user
 from rag_context import build_context
 from genai import generate_bio, generate_learning_plan
 from utils.pdf_generator import generate_pdf
-import tempfile
-import os
 
 st.set_page_config(page_title="AISCA – Résultats", layout="wide")
 
-st.title("📊 Analyse de vos Compétences")
+# ============================================================
+# 🔥 CSS — Animation loader
+# ============================================================
+st.markdown("""
+<style>
+.loader-bar {
+  width: 260px;
+  height: 6px;
+  background: #333;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-top: 8px;
+}
+.loader-bar::before {
+  content: "";
+  width: 40%;
+  height: 100%;
+  background: linear-gradient(90deg, #4C8BF5, #AA5DF5);
+  display: block;
+  animation: slide 1.2s infinite;
+}
+@keyframes slide {
+  0%   { transform: translateX(-40%); }
+  100% { transform: translateX(140%); }
+}
+</style>
+""", unsafe_allow_html=True)
 
-# -------------------------
-# Vérification session
-# -------------------------
-if "user_inputs" not in st.session_state:
+# ============================================================
+# 🔍 Vérification des données
+# ============================================================
+inputs = st.session_state.get("user_inputs")
+if inputs is None:
     st.error("Veuillez d'abord remplir le questionnaire.")
     st.stop()
 
-inputs = st.session_state["user_inputs"]
+# ============================================================
+# 🟦 Titre — affiché immédiatement !
+# ============================================================
+st.markdown("<h1>📊 Analyse de vos Compétences</h1>", unsafe_allow_html=True)
 
-# -------------------------
-# TEXTE UTILISATEUR POUR SBERT
-# -------------------------
+# ============================================================
+# 🧪 Placeholder de l’animation (affiché DIRECTEMENT)
+# ============================================================
+sbert_placeholder = st.empty()
+
+sbert_placeholder.markdown("""
+### 🔍 Analyse sémantique SBERT en cours...
+<div class="loader-bar"></div>
+""", unsafe_allow_html=True)
+
+# ============================================================
+# 🧠 Construction du texte pour SBERT
+# ============================================================
 def build_user_text(inputs):
-    text = ""
-    text += " ".join([p for p in inputs["projects"] if p]) + " "
-    if inputs["tech_skills"]:
-        text += " ".join(inputs["tech_skills"]) + " "
-    text += inputs["domain_choice"] + " "
-    if inputs["soft_skills"]:
-        text += " ".join(inputs["soft_skills"]) + " "
-    likert_text = " ".join([f"{k} niveau {v}" for k, v in inputs["likert"].items()])
-    text += likert_text + " "
+    text = " ".join([p for p in inputs["projects"] if p.strip()])
+    text += " " + " ".join(inputs["tech_skills"])
+    text += " " + inputs["domain_choice"]
+    text += " " + " ".join(inputs["soft_skills"])
     return text.lower()
 
 user_text = build_user_text(inputs)
 
-# -------------------------
-# Analyse SBERT
-# -------------------------
-results = analyze_user(user_text)
-block_scores = results["block_scores"]
+# ============================================================
+# 🔥 Analyse SBERT — (pendant que l’animation s’affiche)
+# ============================================================
+if "results_sbert" not in st.session_state:
+    st.session_state["results_sbert"] = analyze_user(user_text)
+
+results = st.session_state["results_sbert"]
+percent_scores = {k: int(v * 100) for k, v in results["block_scores"].items()}
 job_reco = results["job_recommendation"]
-job_scores = results["job_scores"]
 
-st.success("Analyse terminée ✔️")
+# ➜ On efface l’animation après analyse
+time.sleep(0.5)
+sbert_placeholder.empty()
 
-# -------------------------
-# Convertir en %
-# -------------------------
-def to_percent_dict(d):
-    return {k: int(v * 100) for k, v in d.items()}
-
-percent_scores = to_percent_dict(block_scores)
-
-# ==================================================================
-#   VISUALISATIONS (graphiques + sauvegarde pour PDF)
-# ==================================================================
-
-# -------- DOUGHNUT (image)
-def get_doughnut_figure(scores):
+# ============================================================
+# 📈 VISUALISATIONS — Elles apparaissent APRES l’analyse
+# ============================================================
+def plot_doughnut(scores):
     labels = list(scores.keys())
     values = list(scores.values())
-    colors = ["#4C8BF5", "#AA5DF5", "#F55D9A", "#F5A85D"]
-
-    fig, ax = plt.subplots(figsize=(8, 8))
-
-    wedges, _ = ax.pie(
-        values,
-        colors=colors,
-        startangle=90,
-        wedgeprops={'width': 0.38}
-    )
-
-    avg_score = int(sum(values) / len(values))
-    ax.text(0, 0, f"{avg_score}%", ha="center", va="center", fontsize=28, color="white")
-
-    ax.set_title("Répartition Globale des Compétences (%)", color="white", fontsize=18)
+    fig = go.Figure(go.Pie(
+        labels=labels, values=values,
+        hole=0.55, textinfo="label+percent",
+        marker=dict(colors=["#4C8BF5", "#AA5DF5", "#F55D9A", "#F5A85D"])
+    ))
+    fig.update_layout(title="Répartition des Compétences (%)", title_x=0.5,
+                      paper_bgcolor="rgba(0,0,0,0)", font=dict(color="white"))
     return fig
 
-# -------- BAR CHART (image)
-def get_bar_figure(scores):
-    labels = list(scores.keys())
-    values = list(scores.values())
-
-    fig, ax = plt.subplots(figsize=(6, 4))
-    ax.barh(labels, values, color="#4C8BF5")
-    ax.set_xlim(0, 100)
-    for i, v in enumerate(values):
-        ax.text(v + 2, i, f"{v}%", color="white", fontsize=12)
-
-    ax.set_title("Scores par Bloc (%)", color="white")
+def plot_bar(scores):
+    fig = go.Figure(go.Bar(
+        x=list(scores.values()), y=list(scores.keys()),
+        orientation="h", marker_color="#4C8BF5"
+    ))
+    fig.update_layout(
+        title="Scores par Bloc (%)", title_x=0.5,
+        xaxis=dict(range=[0, 100]),
+        paper_bgcolor="rgba(0,0,0,0)", font=dict(color="white"))
     return fig
 
-# -------- Affichage dans Streamlit
 st.header("📊 Visualisation des Compétences")
+col1, col2 = st.columns(2)
 
-doughnut_fig = get_doughnut_figure(percent_scores)
-bar_fig = get_bar_figure(percent_scores)
-
-col1, col2 = st.columns([1, 1])
+doughnut_fig = plot_doughnut(percent_scores)
+bar_fig = plot_bar(percent_scores)
 
 with col1:
-    st.pyplot(doughnut_fig)
-
+    st.plotly_chart(doughnut_fig, use_container_width=True)
 with col2:
-    st.pyplot(bar_fig)
+    st.plotly_chart(bar_fig, use_container_width=True)
 
-# ==================================================================
-#   MÉTIER RECOMMANDÉ
-# ==================================================================
-st.header("🏆 Métier Recommandé")
+# ============================================================
+# 🤖 IA Générative — avec loader individuel
+# ============================================================
+st.header("🤖 Analyse IA Générative")
 
-st.markdown(f"""
-<div style='padding:20px; border-radius:10px; background:#1c1c1c; color:white; text-align:center; font-size:22px;'>
-<b>{job_reco}</b>
-</div>
-""", unsafe_allow_html=True)
-
-# ==================================================================
-#   IA GÉNÉRATIVE
-# ==================================================================
 context = build_context(inputs, results)
 
-st.header("🤖 Bio Professionnelle")
-bio = generate_bio(context)
+bio_placeholder = st.empty()
+plan_placeholder = st.empty()
+
+# --- Bio ---
+if "bio_text" not in st.session_state:
+    bio_placeholder.markdown("""
+    ### 🧠 Génération de la bio professionnelle...
+    <div class="loader-bar"></div>
+    """, unsafe_allow_html=True)
+    st.session_state["bio_text"] = generate_bio(context)
+    time.sleep(0.5)
+    bio_placeholder.empty()
+
+# --- Plan ---
+if "plan_text" not in st.session_state:
+    plan_placeholder.markdown("""
+    ### 📘 Génération du plan d’apprentissage...
+    <div class="loader-bar"></div>
+    """, unsafe_allow_html=True)
+    st.session_state["plan_text"] = generate_learning_plan(context)
+    time.sleep(0.5)
+    plan_placeholder.empty()
+
+bio = st.session_state["bio_text"]
+plan = st.session_state["plan_text"]
+
+st.subheader("📌 Bio Professionnelle Générée")
 st.write(bio)
 
-st.header("📘 Plan de Progression Personnalisé")
-plan = generate_learning_plan(context)
+st.subheader("📘 Plan d'Apprentissage Personnalisé")
 st.write(plan)
 
-# ==================================================================
-#   SAUVEGARDE GRAPHIQUES POUR PDF
-# ==================================================================
+# ============================================================
+# 📄 Export PDF – direct
+# ============================================================
+st.header("📄 Télécharger votre rapport PDF")
 
-# Créer un dossier temporaire si besoin
 os.makedirs("temp", exist_ok=True)
-
 doughnut_path = "temp/doughnut.png"
 bar_path = "temp/bar.png"
 
-doughnut_fig.savefig(doughnut_path, dpi=200, bbox_inches="tight")
-bar_fig.savefig(bar_path, dpi=200, bbox_inches="tight")
+try:
+    doughnut_fig.update_layout(paper_bgcolor="white", font=dict(color="black")).write_image(doughnut_path)
+    bar_fig.update_layout(paper_bgcolor="white", font=dict(color="black")).write_image(bar_path)
+except:
+    doughnut_path = None
+    bar_path = None
 
-# ==================================================================
-#   PDF : FORCES / FAIBLESSES
-# ==================================================================
+with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
+    pdf_path = tmp.name
+    generate_pdf(pdf_path, percent_scores, job_reco, bio, plan, doughnut_path, bar_path)
 
-sorted_scores = sorted(percent_scores.items(), key=lambda x: x[1], reverse=True)
-strengths = [f"{k} ({v}%)" for k, v in sorted_scores[:2]]
-weaknesses = [f"{k} ({v}%)" for k, v in sorted_scores[-2:]]
-
-# ==================================================================
-#   BOUTON PDF
-# ==================================================================
-st.subheader("📄 Télécharger votre rapport professionnel")
-
-if st.button("📥 Générer mon PDF"):
-
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
-        pdf_path = tmp.name
-
-        generate_pdf(
-            pdf_path,
-            percent_scores,
-            job_reco,
-            bio,
-            plan,
-            strengths,
-            weaknesses,
-            doughnut_path,
-            bar_path
-        )
-
-        with open(pdf_path, "rb") as f:
-            st.download_button(
-                label="📥 Télécharger le rapport PDF",
-                data=f,
-                file_name="Rapport_AISCA.pdf",
-                mime="application/pdf"
-            )
+    st.download_button(
+        label="📥 Télécharger le Rapport AISCA",
+        data=open(pdf_path, "rb").read(),
+        file_name="Rapport_AISCA.pdf",
+        mime="application/pdf",
+        use_container_width=True
+    )

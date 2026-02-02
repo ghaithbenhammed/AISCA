@@ -1,103 +1,60 @@
 def build_context(inputs, results):
     """
-    Construit un contexte structuré pour la GénAI.
-    Ce contexte est utilisé par Gemini pour générer :
-    - bio professionnelle
-    - plan d'apprentissage
-    - résumé de profil
+    Construit un contexte RAG compact, structuré et optimisé pour Gemini.
+    Ce contexte est utilisé pour :
+    - générer une bio professionnelle courte (6 lignes max)
+    - générer un plan d’apprentissage synthétique (10 lignes max)
     """
 
-    # -------------------------
-    # 1) RÉCUPÉRATION DES INFOS
-    # -------------------------
-    scores = results["block_scores"]
+    # =====================================================
+    # 1) SBERT – Scores & Profil
+    # =====================================================
+    percent_scores = {k: int(v * 100) for k, v in results["block_scores"].items()}
     job_reco = results["job_recommendation"]
-    job_scores = results["job_scores"]
 
-    # Pourcentages arrondis
-    percent_scores = {k: int(v * 100) for k, v in scores.items()}
-
-    # -------------------------
-    # 2) FORCES & FAIBLESSES
-    # -------------------------
     sorted_scores = sorted(percent_scores.items(), key=lambda x: x[1], reverse=True)
 
-    strengths = [f"{k} ({v}%)" for k, v in sorted_scores[:2]]
-    weaknesses = [f"{k} ({v}%)" for k, v in sorted_scores[-2:]]
+    strengths = ", ".join([f"{k} ({v}%)" for k, v in sorted_scores[:2]])
+    weaknesses = ", ".join([f"{k} ({v}%)" for k, v in sorted_scores[-2:]])
 
-    # -------------------------
-    # 3) PROJETS UTILISATEUR
-    # -------------------------
-    projects = "\n".join([p for p in inputs["projects"] if p.strip()])
+    # =====================================================
+    # 2) Informations utilisateur (compressées)
+    # =====================================================
+    projects = " | ".join([p.strip() for p in inputs["projects"] if p.strip()])
+    tech_skills = ", ".join(inputs["tech_skills"]) if inputs["tech_skills"] else "Non renseigné"
+    soft_skills = ", ".join(inputs["soft_skills"]) if inputs["soft_skills"] else "Non renseigné"
 
-    # -------------------------
-    # 4) COMPÉTENCES TECHNIQUES
-    # -------------------------
-    tech_skills = ", ".join(inputs["tech_skills"]) if inputs["tech_skills"] else "Non spécifié"
+    likert_summary = ", ".join([f"{k}: {v}/5" for k, v in inputs["likert"].items()])
 
-    # -------------------------
-    # 5) SOFT SKILLS
-    # -------------------------
-    soft_skills = ", ".join(inputs["soft_skills"]) if inputs["soft_skills"] else "Non spécifié"
-
-    # -------------------------
-    # 6) AUTO-ÉVALUATION LIKERT
-    # -------------------------
-    likert_txt = "\n".join([f"- {k} : {v}/5" for k, v in inputs["likert"].items()])
-
-    # -------------------------
-    # 7) CONSTRUCTION DU CONTEXTE
-    # -------------------------
+    # =====================================================
+    # 3) CONTEXTE FINAL – Ultra lisible pour Gemini
+    # =====================================================
     context = f"""
-======================
-PROFIL UTILISATEUR
-======================
-Projets déclarés :
-{projects}
+=== PROFIL UTILISATEUR (SYNTHÈSE) ===
+Domaine d'intérêt : {inputs['domain_choice']}
+Compétences techniques : {tech_skills}
+Soft skills : {soft_skills}
+Auto-évaluation : {likert_summary}
+Projets réalisés : {projects}
 
-Compétences techniques déclarées :
-{tech_skills}
+=== ANALYSE SBERT ===
+Scores par bloc (%) : {percent_scores}
+Points forts : {strengths}
+Points faibles : {weaknesses}
+Métier recommandé : {job_reco}
 
-Soft skills :
-{soft_skills}
-
-Auto-évaluation :
-{likert_txt}
-
-Objectif utilisateur :
-{inputs['domain_choice']}
-
-
-======================
-ANALYSE SBERT
-======================
-Scores par bloc de compétence :
-{percent_scores}
-
-Forces détectées :
-{strengths}
-
-Faiblesses détectées :
-{weaknesses}
-
-Métier recommandé :
-{job_reco}
-
-Détail des scores métiers :
-{job_scores}
-
-
-======================
-INSTRUCTIONS POUR L'IA
-======================
-Utilise ces informations pour :
-- générer une bio professionnelle courte
-- générer un plan de progression structuré
-- résumer le profil de manière claire
-- expliquer les forces et faiblesses
-- adapter le niveau de langage à un étudiant de master
-
-Réponds toujours de manière structurée et professionnelle.
+=== INSTRUCTIONS IA ===
+Tu es un expert RH & pédagogique.
+Produis deux éléments : 
+1) Une bio professionnelle courte (max 6 lignes), claire et valorisante.
+2) Un plan d'apprentissage structuré : 
+   - 3 objectifs
+   - 3 recommandations concrètes
+   - conclusion très courte (1–2 lignes)
+Contraintes : 
+- Style simple, fluide, professionnel
+- Pas de répétitions
+- Ne pas réécrire le contexte
 """
 
-    return context
+    return context.strip()
