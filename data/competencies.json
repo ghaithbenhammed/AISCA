@@ -1,93 +1,85 @@
 {
-    "Data Analysis": {
-        "exploratory data analysis": [
-            "identifier tendances",
-            "analyser distributions",
-            "détecter corrélations"
-        ],
-        "data cleaning techniques": [
-            "traiter valeurs manquantes",
-            "détecter outliers",
-            "normalisation des données"
-        ],
-        "data visualization tools": [
-            "créer graphiques",
-            "construire dashboards",
-            "utiliser matplotlib ou seaborn"
-        ],
-        "python for data analysis": [
-            "manipuler pandas",
-            "utiliser numpy",
-            "automatiser analyses"
-        ]
-    },
+  "Data Analysis": {
+    "exploratory data analysis": [
+      "identifier tendances",
+      "analyser distributions",
+      "détecter corrélations"
+    ],
+    "data cleaning techniques": [
+      "traiter valeurs manquantes",
+      "détecter outliers",
+      "normalisation des données"
+    ],
+    "data visualization tools": [
+      "créer graphiques",
+      "construire dashboards",
+      "utiliser matplotlib ou seaborn"
+    ],
+    "python for data analysis": [
+      "manipuler pandas",
+      "utiliser numpy",
+      "automatiser analyses"
+    ]
+  },
 
-    "Machine Learning": {
-        "supervised learning": [
-            "encoder variables",
-            "séparer dataset train test",
-            "choisir algorithme adapté"
-        ],
-        "model training": [
-            "entraîner modèles",
-            "optimiser hyperparamètres",
-            "éviter surapprentissage"
-        ],
-        "feature engineering": [
-            "sélection des features",
-            "création nouvelles variables",
-            "normalisation caractéristiques"
-        ],
-        "model evaluation metrics": [
-            "accuracy recall precision",
-            "f1 score",
-            "matrice de confusion"
-        ]
-    },
+  "Machine Learning": {
+    "supervised learning": [
+      "encoder variables",
+      "séparer dataset train test",
+      "choisir algorithme adapté"
+    ],
+    "model training": [
+      "entraîner modèles",
+      "optimiser hyperparamètres",
+      "éviter surapprentissage"
+    ],
+    "feature engineering": [
+      "sélection des features",
+      "création nouvelles variables",
+      "normalisation caractéristiques"
+    ],
+    "model evaluation metrics": [
+      "accuracy recall precision",
+      "f1 score",
+      "matrice de confusion"
+    ]
+  },
 
-    "Natural Language Processing": {
-        "text preprocessing": [
-            "tokenization",
-            "lemmatisation",
-            "suppression stopwords"
-        ],
-        "word embeddings": [
-            "utiliser word2vec",
-            "utiliser glove",
-            "comparer vecteurs"
-        ],
-        "transformer models": [
-            "bert embeddings",
-            "attention mechanism",
-            "fine tuning"
-        ],
-        "text classification": [
-            "préparer dataset",
-            "entraîner classifieur",
-            "évaluer classification"
-        ]
-    },
+  "Natural Language Processing": {
+    "text preprocessing": [
+      "tokenization",
+      "lemmatisation",
+      "suppression stopwords"
+    ],
+    "word embeddings": [
+      "utiliser word2vec",
+      "utiliser glove",
+      "comparer vecteurs"
+    ],
+    "transformer models": [
+      "bert embeddings",
+      "attention mechanism",
+      "fine tuning"
+    ],
+    "text classification": [
+      "préparer dataset",
+      "entraîner classifieur",
+      "évaluer classification"
+    ]
+  },
 
-    "Data Engineering": {
-        "sql querying": [
-            "jointures",
-            "agrégations",
-            "optimisation requêtes sql"
-        ],
-        "data pipelines": [
-            "collecte données",
-            "transformation données",
-            "chargement dans data warehouse"
-        ],
-        "etl processes": [
-            "extraction",
-            "nettoyage",
-            "chargement automatisé"
-        ],
-        "database modeling": [
-            "modélisation relationnelle",
-            "modèle étoile",
-            "normalisation base de données"
-        ]
-    }
+  "Data Engineering": {
+    "sql querying": ["jointures", "agrégations", "optimisation requêtes sql"],
+    "data pipelines": [
+      "collecte données",
+      "transformation données",
+      "chargement dans data warehouse"
+    ],
+    "etl processes": ["extraction", "nettoyage", "chargement automatisé"],
+    "database modeling": [
+      "modélisation relationnelle",
+      "modèle étoile",
+      "normalisation base de données"
+    ]
+  }
 }
