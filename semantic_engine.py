@@ -5,18 +5,21 @@ from sentence_transformers import SentenceTransformer, util
 
 
 # ====================================================
-# 1) CHARGEMENT UNIQUE ET CACHE DU MODÈLE SBERT
+# CHARGEMENT UNIQUE DU MODELE SBERT
 # ====================================================
+
 @st.cache_resource(show_spinner=False)
 def load_model():
     return SentenceTransformer("all-MiniLM-L6-v2")
+
 
 model = load_model()
 
 
 # ====================================================
-# 2) CHARGEMENT DES COMPÉTENCES
+# CHARGEMENT DES DONNEES
 # ====================================================
+
 with open("data/competencies.json", "r", encoding="utf-8") as f:
     competency_blocks = json.load(f)
 
@@ -25,73 +28,186 @@ with open("data/jobs.json", "r", encoding="utf-8") as f:
 
 
 # ====================================================
-# 3) PRÉ-CALCUL DES EMBEDDINGS DES MICRO-COMPÉTENCES
+# PRE-CALCUL DES EMBEDDINGS
 # ====================================================
+
 @st.cache_resource(show_spinner=False)
-def compute_competency_embeddings():
-    comp_emb = {}
+def build_embeddings():
+
+    embeddings = {}
 
     for block, competencies in competency_blocks.items():
-        comp_emb[block] = {}
 
-        for comp_name, micro_list in competencies.items():
-            embeddings = model.encode(micro_list, convert_to_tensor=True)
-            comp_emb[block][comp_name] = embeddings
+        embeddings[block] = {}
 
-    return comp_emb
+        for competency, micro_skills in competencies.items():
+
+            embeddings[block][competency] = {
+                "skills": micro_skills,
+                "embeddings": model.encode(
+                    micro_skills,
+                    convert_to_tensor=True
+                )
+            }
+
+    return embeddings
 
 
-COMPETENCY_EMBEDDINGS = compute_competency_embeddings()
+COMPETENCY_EMBEDDINGS = build_embeddings()
 
 
 # ====================================================
-# 4) SCORE DES BLOCS (ULTRA OPTIMISÉ)
+# ANALYSE DES BLOCS
 # ====================================================
+
 def compute_block_scores(user_text):
+
     user_embedding = model.encode(user_text, convert_to_tensor=True)
+
     block_scores = {}
 
+    matched_competencies = {}
+
+    matched_micro_skills = {}
+
     for block, competencies in COMPETENCY_EMBEDDINGS.items():
-        comp_scores = []
 
-        for comp_name, micro_embeddings in competencies.items():
-            similarities = util.cos_sim(user_embedding, micro_embeddings)
-            comp_scores.append(float(similarities.max()))
+        competency_scores = []
 
-        block_scores[block] = float(np.mean(comp_scores))
+        matched_competencies[block] = []
 
-    return block_scores
+        matched_micro_skills[block] = []
+
+        for competency_name, values in competencies.items():
+
+            similarities = util.cos_sim(
+                user_embedding,
+                values["embeddings"]
+            )[0]
+
+            similarities = similarities.cpu().numpy()
+
+            best_index = int(np.argmax(similarities))
+            best_score = float(similarities[best_index])
+
+            competency_scores.append(best_score)
+
+            matched_competencies[block].append({
+                "competency": competency_name,
+                "score": round(best_score, 3)
+            })
+
+            matched_micro_skills[block].append({
+                "competency": competency_name,
+                "micro_skill": values["skills"][best_index],
+                "score": round(best_score, 3)
+            })
+
+        block_scores[block] = float(np.mean(competency_scores))
+
+        matched_competencies[block] = sorted(
+            matched_competencies[block],
+            key=lambda x: x["score"],
+            reverse=True
+        )
+
+        matched_micro_skills[block] = sorted(
+            matched_micro_skills[block],
+            key=lambda x: x["score"],
+            reverse=True
+        )
+
+    return block_scores, matched_competencies, matched_micro_skills
 
 
 # ====================================================
-# 5) RECOMMANDATION MÉTIER
+# RECOMMANDATION METIER
 # ====================================================
+
 def compute_job_recommendation(block_scores):
+
     job_scores = {}
 
-    for job, required_skills in job_profiles.items():
+    job_details = {}
+
+    for job, competencies in job_profiles.items():
+
         scores = []
 
-        for skill in required_skills:
-            for block in competency_blocks:
-                if skill in competency_blocks[block]:
-                    scores.append(block_scores[block])
+        explanations = []
 
-        job_scores[job] = float(np.mean(scores)) if scores else 0.0
+        for competency in competencies:
+
+            for block, block_competencies in competency_blocks.items():
+
+                if competency in block_competencies:
+
+                    score = block_scores[block]
+
+                    scores.append(score)
+
+                    explanations.append({
+                        "block": block,
+                        "competency": competency,
+                        "score": round(score, 3)
+                    })
+
+        job_scores[job] = float(np.mean(scores)) if scores else 0
+
+        job_details[job] = sorted(
+            explanations,
+            key=lambda x: x["score"],
+            reverse=True
+        )
 
     best_job = max(job_scores, key=job_scores.get)
-    return best_job, job_scores
+
+    return best_job, job_scores, job_details
 
 
 # ====================================================
-# 6) FONCTION FINALE APPELÉE PAR TON FRONTEND
+# ANALYSE COMPLETE
 # ====================================================
+
 def analyze_user(user_text):
-    block_scores = compute_block_scores(user_text)
-    best_job, job_scores = compute_job_recommendation(block_scores)
+
+    (
+        block_scores,
+        matched_competencies,
+        matched_micro_skills
+    ) = compute_block_scores(user_text)
+
+    (
+        best_job,
+        job_scores,
+        job_details
+    ) = compute_job_recommendation(block_scores)
+
+    sorted_blocks = sorted(
+        block_scores.items(),
+        key=lambda x: x[1],
+        reverse=True
+    )
+
+    strengths = sorted_blocks[:2]
+
+    weaknesses = sorted_blocks[-2:]
 
     return {
+
         "block_scores": block_scores,
+
+        "job_scores": job_scores,
+
         "job_recommendation": best_job,
-        "job_scores": job_scores
+
+        "job_details": job_details,
+
+        "matched_competencies": matched_competencies,
+
+        "matched_micro_skills": matched_micro_skills,
+
+        "strengths": strengths,
+
+        "weaknesses": weaknesses
     }

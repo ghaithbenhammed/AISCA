@@ -1,102 +1,139 @@
+import time
 import streamlit as st
 from google import genai
-import time
 
 # ======================================================
-# 🔐 INITIALISATION CLIENT GOOGLE GEMINI
+# INITIALISATION GEMINI
 # ======================================================
-client = genai.Client(api_key="AIzaSyAVhwxjzD9QHnlbOl9_vsvAnTcedsOTgKY")
 
-PRIMARY_MODEL = "gemini-2.5-flash"   # modèle demandé par la prof
-FALLBACK_MODEL = "gemini-pro"        # modèle stable si Flash plante
+API_KEY = ""
 
+client = genai.Client(api_key=API_KEY)
+
+PRIMARY_MODEL = "gemini-2.5-flash"
+FALLBACK_MODEL = "gemini-2.5-flash-lite"
 
 # ======================================================
-# 🔄 FONCTION GÉNÉRIQUE AVEC RETRY + FALLBACK
+# APPEL GEMINI
 # ======================================================
-def call_gemini(prompt, max_retries=3):
-    """
-    Appelle Gemini 2.5 Flash avec gestion :
-    - surcharge (503)
-    - quota dépassé (429)
-    - retry automatique
-    - fallback vers Gemini-Pro
-    """
 
-    # 1) Tentatives avec Gemini 2.5 Flash
-    for attempt in range(max_retries):
-        try:
-            response = client.models.generate_content(
-                model=PRIMARY_MODEL,
-                contents=prompt
-            )
-            return response.text
+def call_gemini(prompt):
 
-        except Exception as e:
-            err = str(e)
+    models = [PRIMARY_MODEL, FALLBACK_MODEL]
 
-            # Si modèle saturé (503)
-            if "503" in err or "overloaded" in err:
-                print(f"[Gemini Flash] Surcharge (503). Tentative {attempt+1}/{max_retries}…")
-                time.sleep(1.2)
-                continue
+    last_error = ""
 
-            # Si quota dépassé (429)
-            if "429" in err:
-                print("[Gemini Flash] QUOTA dépassé. Bascule automatique vers Gemini Pro.")
+    for model in models:
+
+        wait = 2
+
+        for attempt in range(5):
+
+            try:
+
+                response = client.models.generate_content(
+                    model=model,
+                    contents=prompt
+                )
+
+                if hasattr(response, "text") and response.text:
+                    return response.text.strip()
+
+            except Exception as e:
+
+                last_error = str(e)
+
+                print("=" * 70)
+                print(f"MODELE : {model}")
+                print(f"Tentative : {attempt+1}/5")
+                print(last_error)
+                print("=" * 70)
+
+                # quota / surcharge
+                if (
+                    "503" in last_error
+                    or "429" in last_error
+                    or "UNAVAILABLE" in last_error
+                    or "RESOURCE_EXHAUSTED" in last_error
+                ):
+
+                    time.sleep(wait)
+                    wait *= 2
+                    continue
+
                 break
 
-            # Erreur inattendue → on sort
-            print("[Gemini Flash] Erreur inconnue :", err)
-            break
+    print(last_error)
 
-    # 2) Fallback automatique → Gemini Pro
-    try:
-        print("[Fallback] Passage vers Gemini Pro…")
-        response = client.models.generate_content(
-            model=FALLBACK_MODEL,
-            contents=prompt
-        )
-        return response.text
+    return """
+⚠️ L'IA Gemini est momentanément indisponible.
 
-    except Exception as e:
-        print("[Gemini Pro] Erreur :", e)
-        return "⚠️ Impossible de générer l'analyse IA pour le moment. Réessayez plus tard."
+Les résultats SBERT restent valides.
+
+Réessayez dans quelques minutes.
+"""
 
 
 # ======================================================
-# 🧠 BIO PROFESSIONNELLE (avec cache)
+# BIO
 # ======================================================
+
 @st.cache_data(show_spinner=False)
 def generate_bio(context):
+
     prompt = f"""
-Génère une bio professionnelle courte (5 à 6 lignes) basée sur ce profil :
+Tu es un expert RH.
+
+Analyse ce profil :
 
 {context}
 
+Rédige uniquement une bio professionnelle.
+
 Contraintes :
-- phrases courtes et claires
-- ton professionnel mais simple
+
+- 5 lignes maximum
+- style professionnel
+- pas de listes
 - pas de répétitions
-- maximum 6 lignes
+- pas d'introduction
 """
+
     return call_gemini(prompt)
 
 
 # ======================================================
-# 🎯 PLAN D'APPRENTISSAGE (avec cache)
+# PLAN
 # ======================================================
+
 @st.cache_data(show_spinner=False)
 def generate_learning_plan(context):
+
     prompt = f"""
-Génère un plan d'apprentissage très synthétique basé sur ce profil :
+Tu es un coach Data & IA.
+
+Analyse ce profil :
 
 {context}
 
-Format attendu :
-- 3 objectifs clairs
-- 3 recommandations concrètes
-- conclusion motivante (1 à 2 lignes)
-- maximum 10 lignes au total
+Génère uniquement un plan d'apprentissage.
+
+Format :
+
+Objectifs
+- ...
+- ...
+- ...
+
+Recommandations
+- ...
+- ...
+- ...
+
+Conclusion
+2 lignes maximum.
+
+Maximum 10 lignes.
 """
+
     return call_gemini(prompt)
